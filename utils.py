@@ -107,3 +107,17 @@ def ga_feature_extraction(data_x, data_y):
     print(confusion_matrix(Ytest, y_pred))
 
 
+def read_raw(file_name, setect_bands=None):
+    '''
+    读取raw文件
+    :param file_name: 文件名
+    :param setect_bands: 选择的波段
+    :return: 波段数据
+    '''
+    with open(file_name, 'rb') as f:
+        data = np.frombuffer(f.read(), dtype=np.float32).reshape(692, 272, 384).transpose(0, 2, 1)
+    if setect_bands is not None:
+        data = data[:, :, setect_bands]
+    return data
+
+

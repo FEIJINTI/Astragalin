@@ -8,14 +8,20 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from matplotlib import pyplot as plt
+import numpy as np
+import pickle
 
 
 
-
-def DecisionTree(train_x, train_y, test_x, test_y):
+def DecisionTree(train_x, train_y, test_x, test_y, file_name):
     dt = DecisionTreeClassifier(random_state=65)
     dt = dt.fit(train_x, train_y)
+    # 保存模型
+    with open(file_name, 'wb') as f:
+        pickle.dump(dt, f)
+
     t1 = time.time()
+
     y_pred = dt.predict(test_x)
     print("预测时间：", time.time()-t1)
     print("DT训练模型评分：" + str(accuracy_score(train_y, dt.predict(train_x))))
@@ -25,3 +31,11 @@ def DecisionTree(train_x, train_y, test_x, test_y):
     print('DT分类报告：' + str(classification_report(test_y, y_pred)))  # 生成一个小报告呀
     print('DT混淆矩阵：' + str(confusion_matrix(test_y, y_pred)))  # 这个也是，生成的矩阵的意思是有多少
 
+
+def predict(x, file_name):
+    with open(file_name, 'rb') as f:
+        dt = pickle.load(f)
+    t1 = time.time()
+    y_pred = dt.predict(x)
+    print("预测时间：", time.time() - t1)
+    return y_pred
