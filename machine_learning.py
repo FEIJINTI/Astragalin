@@ -9,8 +9,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from matplotlib import pyplot as plt
 
-def DecisionTree(train_x, train_y, test_x, test_y):
 
+
+
+def DecisionTree(train_x, train_y, test_x, test_y):
     dt = DecisionTreeClassifier(random_state=65)
     dt = dt.fit(train_x, train_y)
     t1 = time.time()

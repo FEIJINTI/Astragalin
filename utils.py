@@ -6,8 +6,17 @@
 import cv2
 
 import numpy as np
+from genetic_selection import GeneticSelectionCV
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
 
 def read_envi_ascii(file_name, save_xy=False, hdr_file_name=None):
     """
@@ -66,5 +75,35 @@ def read_envi_ascii(file_name, save_xy=False, hdr_file_name=None):
                 Warning("The given hdr file is invalid, bands num is not equal to wavelength.")
     return dict(zip(class_names, vectors))
 
+
+def ga_feature_extraction(data_x, data_y):
+    '''
+    使用遗传算法进行特征提取
+    :param data_x: 特征
+    :param data_y: 类别
+    '''
+    Xtrain, Xtest, Ytrain, Ytest = train_test_split(data_x, data_y, test_size=0.3)
+    clf = DecisionTreeClassifier(random_state=3)
+    selector = GeneticSelectionCV(clf, cv=20,
+                                  verbose=1,
+                                  scoring="accuracy",
+                                  max_features=7,
+                                  n_population=200,
+                                  crossover_proba=0.5,
+                                  mutation_proba=0.2,
+                                  n_generations=200,
+                                  crossover_independent_proba=0.5,
+                                  mutation_independent_proba=0.05,
+                                  tournament_size=3,
+                                  n_gen_no_change=10,
+                                  caching=True,
+                                  n_jobs=-1)
+    selector = selector.fit(Xtrain, Ytrain)
+    Xtrain_ga, Xtest_ga = Xtrain[:, selector.support_], Xtest[:, selector.support_]
+    clf = clf.fit(Xtrain_ga, Ytrain)
+    print(np.where(selector.support_ == True))
+    y_pred = clf.predict(Xtest_ga)
+    print(classification_report(Ytest, y_pred))
+    print(confusion_matrix(Ytest, y_pred))
 
 
