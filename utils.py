@@ -119,5 +119,3 @@ def read_raw(file_name, setect_bands=None):
     if setect_bands is not None:
         data = data[:, :, setect_bands]
     return data
-
-
