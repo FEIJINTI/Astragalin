@@ -119,3 +119,16 @@ def read_raw(file_name, setect_bands=None):
     if setect_bands is not None:
         data = data[:, :, setect_bands]
     return data
+
+
+def save_raw(file_name, data):
+    '''
+    保存raw文件
+    :param file_name: 文件名
+    :param data: 数据
+    '''
+    data = data.transpose(0, 2, 1)
+    # 将data转换为一维数组
+    data = data.reshape(-1)
+    with open(file_name, 'wb') as f:
+        f.write(data.astype(np.float32).tobytes())
