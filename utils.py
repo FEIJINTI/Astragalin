@@ -84,17 +84,17 @@ def ga_feature_extraction(data_x, data_y):
     '''
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(data_x, data_y, test_size=0.3)
     clf = DecisionTreeClassifier(random_state=3)
-    selector = GeneticSelectionCV(clf, cv=20,
+    selector = GeneticSelectionCV(clf, cv=30,
                                   verbose=1,
                                   scoring="accuracy",
-                                  max_features=7,
-                                  n_population=200,
-                                  crossover_proba=0.5,
-                                  mutation_proba=0.2,
-                                  n_generations=200,
-                                  crossover_independent_proba=0.5,
-                                  mutation_independent_proba=0.05,
-                                  tournament_size=3,
+                                  max_features=10,
+                                  n_population=500,
+                                  crossover_proba=0.6,
+                                  mutation_proba=0.3,
+                                  n_generations=300,
+                                  crossover_independent_proba=0.6,
+                                  mutation_independent_proba=0.1,
+                                  tournament_size=10,
                                   n_gen_no_change=10,
                                   caching=True,
                                   n_jobs=-1)
