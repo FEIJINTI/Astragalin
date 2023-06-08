@@ -13,8 +13,8 @@ import pickle
 
 
 
-def DecisionTree(train_x, train_y, test_x, test_y, file_name):
-    dt = DecisionTreeClassifier(random_state=65)
+def DecisionTree(train_x, train_y, test_x, test_y, file_name, class_weight=None):
+    dt = DecisionTreeClassifier(random_state=65, class_weight=class_weight)
     dt = dt.fit(train_x, train_y)
     # 保存模型
     with open(file_name, 'wb') as f:
