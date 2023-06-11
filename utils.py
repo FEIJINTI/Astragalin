@@ -134,3 +134,65 @@ def save_raw(file_name, data):
     data = data.reshape(-1)
     with open(file_name, 'wb') as f:
         f.write(data.astype(np.float32).tobytes())
+
+
+def read_rgb(file_name):
+    '''
+    读取rgb文件
+    :param file_name: 文件名
+    :return: rgb数据
+    '''
+    data = cv2.imread(file_name)
+    data = cv2.cvtColor(data, cv2.COLOR_BGR2RGB)
+    #给一个颜色对应的字典，用于将rgb转换为类别，白色对应0，黄色对应1，青色对应2，红色对应3，绿色对应4，蓝色对应5
+    color_dict = {(255, 255, 255): 0, (255, 255, 0): 1, (0, 255, 255): 2, (255, 0, 0): 3, (0, 255, 0): 4, (0, 0, 255): 5}
+    # 保存图片的形状，用于将一维数组转换为三维数组
+    shape = data.shape
+    # 将rgb转换为类别
+    data = data.reshape(-1, 3).tolist()
+    # 将rgb转换为类别
+    mapped_data = []
+
+    for i, color in enumerate(data):
+        mapped_value = color_dict.get(tuple(color))
+        if mapped_value is None:
+            print("No mapping found for color", color, "at index", i)
+        else:
+            mapped_data.append(mapped_value)
+    # 将一维数组转换为三维数组
+    data = np.array(mapped_data).reshape(shape[0], shape[1])
+    return data
+
+
+def read_data(raw_path, rgb_path, shape=None, setect_bands=None, blk_size=4):
+    '''
+    读取数据
+    :param raw_path: raw文件路径
+    :param rgb_path: rgb文件路径
+    :param setect_bands: 选择的波段
+    :return: 波段数据，rgb数据
+    '''
+    if shape is None:
+        shape = (692, 272, 384)
+    with open(raw_path, 'rb') as f:
+        raw = np.frombuffer(f.read(), dtype=np.float32).reshape(shape).transpose(0, 2, 1)
+    if setect_bands is not None:
+        raw = raw[:, :, setect_bands]
+    color_dict = {(255, 255, 255): 0, (255, 255, 0): 1, (0, 255, 255): 2, (255, 0, 0): 3, (0, 255, 0): 4,
+                  (0, 0, 255): 5}
+    rgb = cv2.imread(rgb_path)
+    rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
+    data_x = []
+    data_y = []
+    for i in range(0, rgb.shape[0], blk_size):
+        for j in range(0, rgb.shape[1], blk_size):
+            x = raw[i:i + blk_size, j:j + blk_size, :]
+            y = rgb[i:i + blk_size, j:j + blk_size]
+            # 取y的第三行第三列的像素值，判断该像素值是否在color_dict中，如果在则将x和y添加到data_x和data_y中
+            y = tuple(y[2, 2, :])
+            if y in color_dict.keys():
+                data_x.append(x)
+                data_y.append(color_dict[y])
+    data_x = np.array(data_x)
+    data_y = np.array(data_y).astype(np.uint8)
+    return data_x, data_y
