@@ -164,7 +164,7 @@ def read_rgb(file_name):
     return data
 
 
-def read_data(raw_path, rgb_path, shape=None, setect_bands=None, blk_size=4):
+def read_data(raw_path, rgb_path, shape=None, setect_bands=None, blk_size=4, cut_shape=None, dp=False):
     '''
     读取数据
     :param raw_path: raw文件路径
@@ -182,14 +182,22 @@ def read_data(raw_path, rgb_path, shape=None, setect_bands=None, blk_size=4):
                   (0, 0, 255): 5}
     rgb = cv2.imread(rgb_path)
     rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
+    if cut_shape is not None:
+        raw = raw[ :cut_shape[0], :cut_shape[1], :]
+        rgb = rgb[ :cut_shape[0], :cut_shape[1], :]
     data_x = []
     data_y = []
     for i in range(0, rgb.shape[0], blk_size):
         for j in range(0, rgb.shape[1], blk_size):
             x = raw[i:i + blk_size, j:j + blk_size, :]
             y = rgb[i:i + blk_size, j:j + blk_size]
-            # 取y的第三行第三列的像素值，判断该像素值是否在color_dict中，如果在则将x和y添加到data_x和data_y中
-            y = tuple(y[2, 2, :])
+            # # 取y的第三行第三列的像素值，判断该像素值是否在color_dict中，如果在则将x和y添加到data_x和data_y中
+            # y = tuple(y[2, 2, :])
+            # if y in color_dict.keys():
+            #     data_x.append(x)
+            #     data_y.append(color_dict[y])
+            # 取y的中心点像素值，判断该像素值是否在color_dict中，如果在则将x和y添加到data_x和data_y中
+            y = tuple(y[blk_size//2, blk_size//2, :])
             if y in color_dict.keys():
                 data_x.append(x)
                 data_y.append(color_dict[y])
