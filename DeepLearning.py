@@ -114,7 +114,7 @@ for epoch in range(epochs):
     history.append([avg_train_loss, avg_test_loss, avg_train_acc, avg_test_acc])
     if best_acc < avg_test_acc:
         best_acc, best_epoch = avg_test_acc, epoch
-        path = os.path.join(save_best_path, f'best_5x5_MobileNet_c_test.pth')
+        path = os.path.join(save_best_path, f'best_5x5_resnet.pth')
         torch.save(net.state_dict(), path)
     epoch_end = time.time()
     writer.add_scalar("Learning_rate", optimizer.param_groups[0]['lr'], epoch)
