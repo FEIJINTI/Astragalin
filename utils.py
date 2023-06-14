@@ -107,7 +107,7 @@ def ga_feature_extraction(data_x, data_y):
     print(confusion_matrix(Ytest, y_pred))
 
 
-def read_raw(file_name, shape=None,  setect_bands=None):
+def read_raw(file_name, shape=None,  setect_bands=None, cut_shape=None):
     '''
     读取raw文件
     :param file_name: 文件名
@@ -120,6 +120,8 @@ def read_raw(file_name, shape=None,  setect_bands=None):
         data = np.frombuffer(f.read(), dtype=np.float32).reshape(shape).transpose(0, 2, 1)
     if setect_bands is not None:
         data = data[:, :, setect_bands]
+    if cut_shape is not None:
+        data = data[: cut_shape[0], : cut_shape[1], :]
     return data
 
 
