@@ -25,7 +25,7 @@ writer = SummaryWriter(log_dir=log_dir, flush_secs=60)
 
 print(device)
 Batch_Size = 512
-epochs = 1000
+epochs = 10000
 
 
 raw_path = 'data/hebing.raw'
