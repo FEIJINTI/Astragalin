@@ -76,7 +76,7 @@ def RandomForest(train_x, train_y, test_x, test_y, file_name, class_weight=None)
 
 
 def AdaBoost(train_x, train_y, test_x, test_y, file_name, class_weight=None):
-    ada = AdaBoostClassifier(n_estimators= 2, random_state=65, class_weight=class_weight)
+    ada = AdaBoostClassifier(n_estimators= 2, random_state=65)
     ada = ada.fit(train_x, train_y)
     # 保存模型
     with open(file_name, 'wb') as f:
@@ -95,7 +95,7 @@ def AdaBoost(train_x, train_y, test_x, test_y, file_name, class_weight=None):
     
 
 def GradientBoosting(train_x, train_y, test_x, test_y, file_name, class_weight=None):
-    gb = GradientBoostingClassifier(n_estimators= 2, random_state=65, class_weight=class_weight)
+    gb = GradientBoostingClassifier(n_estimators= 2, random_state=65)
     gb = gb.fit(train_x, train_y)
     # 保存模型
     with open(file_name, 'wb') as f:
@@ -134,7 +134,7 @@ def XGBoost(train_x, train_y, test_x, test_y, file_name, class_weight=None):
 
 def MLP(train_x, train_y, test_x, test_y, file_name, class_weight=None):
     mlp = MLPClassifier(hidden_layer_sizes=(100, 100, 100), max_iter=1000, alpha=0.0001, solver='sgd',
-                        verbose=10, random_state=65, tol=0.000000001, class_weight=class_weight)
+                        verbose=10, random_state=65, tol=0.000000001)
     mlp = mlp.fit(train_x, train_y)
     # 保存模型
     with open(file_name, 'wb') as f:
