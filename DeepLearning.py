@@ -30,7 +30,7 @@ epochs = 10000
 
 raw_path = 'data/hebing.raw'
 rgb_path = 'data/hebing.png'
-bands = [31, 32, 33, 34, 35, 36, 37]
+bands = [33, 34, 35, 36, 37, 38, 39]
 data_x, data_y = read_data(raw_path, rgb_path, shape=(692, 272, 768), setect_bands=bands, blk_size=5, cut_shape=(690, 765))
 data_x_shape = data_x.shape
 data_x = data_x.reshape(-1, data_x.shape[1] * data_x.shape[2] * data_x.shape[3])
