@@ -63,7 +63,7 @@ print('测试集的大小：' + str(test_data_size))
 net = resnet18(num_classes=6)
 net = net.to(device)
 loss_function = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.0001)
+optimizer = optim.Adam(net.parameters(), lr=0.0001)
 history = []
 
 best_acc = 0.0
