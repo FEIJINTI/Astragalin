@@ -10,13 +10,14 @@ from genetic_selection import GeneticSelectionCV
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+import logging
+import os
+import shutil
+import time
+import socket
 
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
+
 
 def read_envi_ascii(file_name, save_xy=False, hdr_file_name=None):
     """
@@ -138,6 +139,9 @@ def save_raw(file_name, data):
         f.write(data.astype(np.float32).tobytes())
 
 
+
+
+
 def read_rgb(file_name):
     '''
     读取rgb文件
@@ -206,3 +210,159 @@ def read_data(raw_path, rgb_path, shape=None, setect_bands=None, blk_size=4, cut
     data_x = np.array(data_x)
     data_y = np.array(data_y).astype(np.uint8)
     return data_x, data_y
+
+
+def try_connect(connect_ip: str, port_number: int, is_repeat: bool = False, max_reconnect_times: int = 50) -> (
+                bool, socket.socket):
+    """
+    尝试连接.
+
+    :param is_repeat: 是否是重新连接
+    :param max_reconnect_times:最大重连次数
+    :return: (连接状态True为成功, Socket / None)
+    """
+    reconnect_time = 0
+    while reconnect_time < max_reconnect_times:
+        logging.warning(f'尝试{"重新" if is_repeat else ""}发起第{reconnect_time + 1}次连接...')
+        try:
+            connected_sock = PreSocket(socket.AF_INET, socket.SOCK_STREAM)
+            connected_sock.connect((connect_ip, port_number))
+        except Exception as e:
+            reconnect_time += 1
+            logging.error(f'第{reconnect_time}次连接失败... 5秒后重新连接...\n {e}')
+            time.sleep(5)
+            continue
+        logging.warning(f'{"重新" if is_repeat else ""}连接成功')
+        return True, connected_sock
+    return False, None
+
+
+class PreSocket(socket.socket):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pre_pack = b''
+        self.settimeout(5)
+
+    def receive(self, *args, **kwargs):
+        if self.pre_pack == b'':
+            return self.recv(*args, **kwargs)
+        else:
+            data_len = args[0]
+            required, left = self.pre_pack[:data_len], self.pre_pack[data_len:]
+            self.pre_pack = left
+            return required
+
+    def set_prepack(self, pre_pack: bytes):
+        temp = self.pre_pack
+        self.pre_pack = temp + pre_pack
+
+
+class DualSock(PreSocket):
+    def __init__(self, connect_ip='127.0.0.1', recv_port: int = 21122, send_port: int = 21123):
+        super().__init__()
+        received_status, self.received_sock = try_connect(connect_ip=connect_ip, port_number=recv_port)
+        send_status, self.send_sock = try_connect(connect_ip=connect_ip, port_number=send_port)
+        self.status = received_status and send_status
+
+    def send(self, *args, **kwargs) -> int:
+        return self.send_sock.send(*args, **kwargs)
+
+    def receive(self, *args, **kwargs) -> bytes:
+        return self.received_sock.receive(*args, **kwargs)
+
+    def set_prepack(self, pre_pack: bytes):
+        self.received_sock.set_prepack(pre_pack)
+
+    def reconnect(self, connect_ip='127.0.0.1', recv_port:int = 21122, send_port: int = 21123):
+        received_status, self.received_sock = try_connect(connect_ip=connect_ip, port_number=recv_port)
+        send_status, self.send_sock = try_connect(connect_ip=connect_ip, port_number=send_port)
+        return received_status and send_status
+
+def receive_sock(recv_sock: PreSocket, pre_pack: bytes = b'', time_out: float = -1.0, time_out_single=5e20) -> (
+bytes, bytes):
+    """
+    从指定的socket中读取数据.
+
+    :param recv_sock: 指定sock
+    :param pre_pack: 上一包的粘包内容
+    :param time_out: 每隔time_out至少要发来一次指令,否则认为出现问题进行重连，小于0则为一直等
+    :param time_out_single: 单次指令超时时间，单位是秒
+    :return: data, next_pack
+    """
+    recv_sock.set_prepack(pre_pack)
+    # 开头校验
+    time_start_recv = time.time()
+    while True:
+        if time_out > 0:
+            if (time.time() - time_start_recv) > time_out:
+                logging.error(f'指令接收超时')
+                return b'', b''
+        try:
+            temp = recv_sock.receive(1)
+        except ConnectionError as e:
+            logging.error(f'连接出错, 错误代码:\n{e}')
+            return b'', b''
+        except TimeoutError as e:
+            # logging.error(f'超时了，错误代码: \n{e}')
+            logging.info('运行中,等待指令..')
+            continue
+        except socket.timeout as e:
+            logging.info('运行中,等待指令..')
+            continue
+        except Exception as e:
+            logging.error(f'遇见未知错误，错误代码: \n{e}')
+            return b'', b''
+        if temp == b'\xaa':
+            break
+
+    # 接收开头后，开始进行时间记录
+    time_start_recv = time.time()
+
+    # 获取报文长度
+    temp = b''
+    while len(temp) < 4:
+        if (time.time() - time_start_recv) > time_out_single:
+            logging.error(f'单次指令接收超时')
+            return b'', b''
+        try:
+            temp += recv_sock.receive(1)
+        except Exception as e:
+            logging.error(f'接收报文的长度不正确, 错误代码: \n{e}')
+            return b'', b''
+    try:
+        data_len = int.from_bytes(temp, byteorder='big')
+    except Exception as e:
+        logging.error(f'转换失败,错误代码 \n{e}')
+        return b'', b''
+
+    # 读取报文内容
+    temp = b''
+    while len(temp) < data_len:
+        if (time.time() - time_start_recv) > time_out_single:
+            logging.error(f'单次指令接收超时')
+            return b'', b''
+        try:
+            temp += recv_sock.receive(data_len)
+        except Exception as e:
+            logging.error(f'接收报文内容失败, 错误代码: \n{e}')
+            return b'', b''
+    data, next_pack = temp[:data_len], temp[data_len:]
+    recv_sock.set_prepack(next_pack)
+    next_pack = b''
+
+    # 进行数据校验
+    temp = b''
+    while len(temp) < 3:
+        if (time.time() - time_start_recv) > time_out_single:
+            logging.error(f'单次指令接收超时')
+            return b'', b''
+        try:
+            temp += recv_sock.receive(1)
+        except Exception as e:
+            logging.error(f'接收报文校验失败, 错误代码: \n{e}')
+            return b'', b''
+    if temp == b'\xff\xff\xbb':
+        return data, next_pack
+    else:
+        logging.error(f"接收了一个完美的只错了校验位的报文")
+        return b'', b''
