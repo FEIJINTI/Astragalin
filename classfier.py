@@ -19,18 +19,43 @@ import time
 import pickle
 import os
 import utils
+from root_dir import ROOT_DIR
+
 
 class Astragalin(object):
     def __init__(self, load_from=None, debug_mode=False, class_weight=None):
         if load_from is None:
             self.model = DecisionTreeClassifier(random_state=65, class_weight=class_weight)
-            self.log = utils.Logger(is_to_file=debug_mode)
-            self.debug_mode = debug_mode
         else:
-            self.lode(load_from)
+            self.load(load_from)
+        self.log = utils.Logger(is_to_file=debug_mode)
+        self.debug_mode = debug_mode
 
-    def lode(self, path=None):
-        pass
+
+    def load(self, path=None):
+        if path is None:
+            path = os.path.join(ROOT_DIR, 'models')
+            model_files = os.listdir(path)
+            if len(model_files) == 0:
+                self.log.log("No model found!")
+                return 1
+            self.log.log("./ Models Found:")
+            _ = [self.log.log("├--" + str(model_file)) for model_file in model_files]
+            file_times = [model_file[6:-2] for model_file in model_files]
+            latest_model = model_files[int(np.argmax(file_times))]
+            self.log.log("└--Using the latest model: " + str(latest_model))
+            path = os.path.join(ROOT_DIR, "models", str(latest_model))
+        if not os.path.isabs(path):
+            logging.warning('给的是相对路径')
+            return -1
+        if not os.path.exists(path):
+            logging.warning('文件不存在')
+            return -1
+        with open(path, 'rb') as f:
+            model_dic = pickle.load(f)
+        self.model = model_dic['model']
+        return 0
+
 
 
     def fit(self, data_x, data_y):
@@ -55,8 +80,22 @@ class Astragalin(object):
 
     def fit_value(self, data_path='data/1.txt', select_bands=[91, 92, 93, 94, 95, 96, 97, 98, 99, 100]):
         data_x, data_y = self.data_construction(data_path, select_bands)
-        self.fit(data_x, data_y)
+        score = self.fit(data_x, data_y)
+        print('score:', score)
+        model_name = self.save()
+        return score, model_name
 
+
+
+    def save(self, file_name):
+        if file_name is None:
+            file_name = "model_" + time.strftime("%Y-%m-%d_%H-%M") + ".p"
+        file_name = os.path.join(ROOT_DIR, "models", file_name)
+        model_dic = {'model': self.model}
+        with open(file_name, 'wb') as f:
+            pickle.dump(model_dic, f)
+        self.log.log("Model saved to '" + str(file_name) + "'.")
+        return file_name
 
 
     def data_construction(self, data_path, select_bands):
@@ -87,6 +126,7 @@ class Astragalin(object):
         data_x = data_x.reshape(-1, data_x.shape[2])
         data_y = self.model.predict(data_x)
         data_y = data_y.reshape(data_x_shape[0], data_x_shape[1]).astype(np.uint8)
+        data_y = self.connect_space(data_y)
         return data_y
 
 
