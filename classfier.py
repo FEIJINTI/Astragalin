@@ -1,4 +1,3 @@
-
 import logging
 import sys
 from typing import Optional
@@ -27,94 +26,77 @@ class Astragalin(object):
             self.model = DecisionTreeClassifier(random_state=65, class_weight=class_weight)
             self.log = utils.Logger(is_to_file=debug_mode)
             self.debug_mode = debug_mode
+        else:
+            self.lode(load_from)
+
+    def lode(self, path=None):
+        pass
 
 
+    def fit(self, data_x, data_y):
+        x_train, x_test, y_train, y_test = train_test_split(data_x, data_y, test_size=0.3, random_state=65)
+        self.model.fit(x_train, y_train)
+        y_pred = self.model.predict(x_test)
+        print(confusion_matrix(y_test, y_pred))
 
-
-
-
-
-    def fit(self, data_x, data_y, test_size=0.3):
-        train_x, test_x, train_y, test_y = train_test_split(data_x, data_y, test_size=test_size, stratify=data_y)
-        self.model.fit(train_x, train_y)
-        y_pred = self.model.predict(test_x)
-        print(confusion_matrix(test_y, y_pred))
-
-        pre_score = accuracy_score(test_y, y_pred)
+        pre_score = accuracy_score(y_test, y_pred)
         self.log.log("Test accuracy is:" + str(pre_score * 100) + "%.")
-        y_pred = self.model.predict(train_x)
+        y_pred = self.model.predict(x_train)
 
-        pre_score = accuracy_score(train_y, y_pred)
+        pre_score = accuracy_score(y_train, y_pred)
         self.log.log("Train accuracy is:" + str(pre_score * 100) + "%.")
         y_pred = self.model.predict(data_x)
-
 
         pre_score = accuracy_score(data_y, y_pred)
         self.log.log("Total accuracy is:" + str(pre_score * 100) + "%.")
 
-        # 显示结果报告
-
         return int(pre_score * 100)
 
-    def predict(self, data_x, ):
-        select = SelectKBest(chi2, k=10)
-        x_new = select.fit_transform(data_x, data_y)
-        selected_features = select.get_support(indices=True)
-        data_x = read_raw('data/01newrawfile_ref.raw', shape=(750, 288, 384), setect_bands=selected_features)
-        # %%
+
+    def fit_value(self, data_path='data/1.txt', select_bands=[91, 92, 93, 94, 95, 96, 97, 98, 99, 100]):
+        data_x, data_y = self.data_construction(data_path, select_bands)
+        self.fit(data_x, data_y)
+
+
+
+    def data_construction(self, data_path, select_bands):
+        data = utils.read_envi_ascii(data_path)
+        beijing = data['beijing'][:, select_bands]
+        zazhi1 = data['zazhi1'][:, select_bands]
+        zazhi2 = data['zazhi2'][:, select_bands]
+        huangqi = data['huangqi'][:, select_bands]
+        gancaopian = data['gancaopian'][:, select_bands]
+        hongqi = data['hongqi'][:, select_bands]
+        beijing_y = np.zeros(beijing.shape[0])
+        zazhi1_y = np.ones(zazhi1.shape[0])
+        zazhi2_y = np.ones(zazhi2.shape[0]) * 2
+        huangqi_y = np.ones(huangqi.shape[0]) * 3
+        gancaopian_y = np.ones(gancaopian.shape[0]) * 4
+        hongqi_y = np.ones(hongqi.shape[0]) * 5
+        data_x = np.concatenate((beijing, zazhi1, zazhi2, huangqi, gancaopian, hongqi), axis=0)
+        data_y = np.concatenate((beijing_y, zazhi1_y, zazhi2_y, huangqi_y, gancaopian_y, hongqi_y), axis=0)
+        return data_x, data_y
+
+    def predict(self, data_x):
+        '''
+        对数据进行预测
+        :param data_x: 波段选择后的数据
+        :return: 预测结果二值化后的数据，0为背景，1为杂质1,2为杂质2，3为黄芪，4为甘草片，5为红芪
+        '''
         data_x_shape = data_x.shape
         data_x = data_x.reshape(-1, data_x.shape[2])
         data_y = self.model.predict(data_x)
-        # %%
         data_y = data_y.reshape(data_x_shape[0], data_x_shape[1]).astype(np.uint8)
-        # %%
-        pre_data_y = np.zeros((data_y.shape[0], data_y.shape[1], 3), dtype=np.uint8)
-
-        pre_data_y[data_y == 0] = [0, 0, 0]  # 黑色
-        pre_data_y[data_y == 1] = [255, 0, 0]  # 红色
-        pre_data_y[data_y == 2] = [0, 255, 0]  # 绿色
-        pre_data_y[data_y == 3] = [0, 0, 255]  # 蓝色
-        pre_data_y[data_y == 4] = [255, 255, 0]  # 黄色
-        pre_data_y[data_y == 5] = [255, 0, 255]  # 紫色
+        return data_y
 
 
+# 连通域处理离散点
     def connect_space(self, data_y):
         labels, num_features = ndimage.label(data_y)
         for i in range(1, num_features + 1):
             mask = (labels == i)
             counts = np.bincount(data_y[mask])
-            # 如果2的个数在所有的像素点中占比超过25%，则认为是2，否则认为0和1中最多的是哪个就是哪个
-            # 如果有count[2]，才进入判断，否则直接认为是0或者1
-            if len(counts) > 2 and counts[2] / np.sum(counts) > 0.20:
-                data_y[mask] = 2
-            else:
-                data_y[mask] = np.argmax(counts)
             data_y[mask] = np.argmax(counts)
+        return data_y
 
 
-
-
-
-
-
-
-
-
-    # def DecisionTree(self,train_x, train_y, test_x, test_y, file_name, class_weight=None):
-    #     dt = DecisionTreeClassifier(random_state=65, class_weight=class_weight)
-    #     dt = dt.fit(train_x, train_y)
-    #     # 保存模型
-    #     with open(file_name, 'wb') as f:
-    #         pickle.dump(dt, f)
-    #
-    #     t1 = time.time()
-    #
-    #     y_pred = dt.predict(test_x)
-    #
-    # def predict(x, file_name):
-    #     with open(file_name, 'rb') as f:
-    #         dt = pickle.load(f)
-    #     t1 = time.time()
-    #     y_pred = dt.predict(x)
-    #     print("预测时间：", time.time() - t1)
-    #     return y_pred
