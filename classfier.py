@@ -87,6 +87,7 @@ class Astragalin(object):
 
 
 
+    #保存模型
     def save(self, file_name):
         if file_name is None:
             file_name = "model_" + time.strftime("%Y-%m-%d_%H-%M") + ".p"

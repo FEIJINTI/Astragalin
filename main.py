@@ -43,18 +43,19 @@ def main(is_debug=False):
     console_handler.setLevel(logging.DEBUG if is_debug else logging.WARNING)
     logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] - %(levelname)s - %(message)s',
                         handlers=[file_handler, console_handler], level=logging.DEBUG)
-    dual_sock = DualSock(connect_ip='127.0.0.1')
+    dual_sock = DualSock(connect_ip='192.168.2.230')
 
     while not dual_sock.status:
+        logging.error('连接被断开，正在重连')
         dual_sock.reconnect()
     detector = Astragalin(ROOT_DIR / 'models' / 'astragalin.p')
     # _ = detector.predict(np.ones((4096, 1200, 10), dtype=np.float32))
     while True:
         pack, next_pack = receive_sock(dual_sock)
-        if pack == b"":  # 无数据
-            time.sleep(5)
-            dual_sock.reconnect()
-            continue
+        # if pack == b"":  # 无数据
+        #     time.sleep(5)
+        #     dual_sock.reconnect()
+        #     continue
 
         cmd, data = parse_protocol(pack)
         process_cmd(cmd=cmd, data=data, connected_sock=dual_sock, detector=detector)
