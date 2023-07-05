@@ -47,7 +47,7 @@ def main(is_debug=False):
 
     while not dual_sock.status:
         dual_sock.reconnect()
-    detector = Astragalin(r"C:\Users\FEIJINTI\OneDrive\PycharmProjects\Astragalin\models\astragalin.p")
+    detector = Astragalin(ROOT_DIR / 'models' / 'astragalin.p')
     # _ = detector.predict(np.ones((4096, 1200, 10), dtype=np.float32))
     while True:
         pack, next_pack = receive_sock(dual_sock)
