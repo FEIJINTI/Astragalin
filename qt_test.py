@@ -107,9 +107,11 @@ def main():
             print('发送成功')
             result = socket_send_2.recv(5)
             length = int.from_bytes(result[1:5], byteorder='big')
-            result = socket_send_2.recv(length)
+            result = b''
+            while len(result) < length:
+                result += socket_send_2.recv(length)
             n_rows, n_cols = int.from_bytes(result[4:6], byteorder='big'), int.from_bytes(result[6:8], byteorder='big')
-            data = np.frombuffer(result[8:], dtype=np.uint8).reshape(n_rows, n_cols)
+            data = np.frombuffer(result[8:length], dtype=np.uint8).reshape(n_rows, n_cols)
             plt.imshow(data)
             plt.show()
 
