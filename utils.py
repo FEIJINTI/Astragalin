@@ -15,7 +15,6 @@ import os
 import shutil
 import time
 import socket
-from classfier import Astragalin
 
 
 
@@ -387,8 +386,7 @@ def parse_protocol(data: bytes) -> (str, any):
             logging.error(f'长宽转换失败, 错误代码{e}, 报文大小: n_rows:{n_rows}, n_cols: {n_cols}, n_bands: {n_bands}')
             return '', None
         try:
-            assert n_rows * n_cols * 12 == len(img)
-            # 因为是float32类型 所以长度要乘12 ，如果是uint8则乘3
+            assert n_rows * n_cols * n_bands * 4 == len(img)
         except AssertionError:
             logging.error('图像指令IM转换失败，数据长度错误')
             return '', None
@@ -426,7 +424,8 @@ def done_sock(send_sock: socket.socket, cmd_type: str, result = '') -> bool:
         n_rows = n_rows.to_bytes(2, byteorder='big')
         n_cols = n_cols.to_bytes(2, byteorder='big')
         result = result.tobytes()
-        length = len(result) + 4
+        # 指令4位，长宽各2位
+        length = len(result) + 8
         length = length.to_bytes(4, byteorder='big')
         msg = b'\xaa' + length + (' D' + cmd).upper().encode('ascii') + n_rows + n_cols + result + b'\xff\xff\xbb'
     try:
@@ -435,25 +434,6 @@ def done_sock(send_sock: socket.socket, cmd_type: str, result = '') -> bool:
         logging.error(f'发送完成指令失败，错误类型：{e}')
         return False
     return True
-
-
-def process_cmd(cmd: str, data:any, connected_sock: socket.socket, detector: Astragalin) -> tuple:
-    '''
-    处理指令
-    :param cmd: 指令类型
-    :param data: 指令内容
-    :param connected_sock: socket
-    :param detector: 模型
-    :return: 是否处理成功
-    '''
-    result = ''
-    if cmd == 'IM':
-        result = detector.predict(data)
-        response = done_sock(connected_sock, cmd, result)
-    else:
-        logging.error(f'错误指令，指令为{cmd}')
-        response = False
-    return response, result
 
 
 def mkdir_if_not_exist(dir_name, is_delete=False):
@@ -497,7 +477,7 @@ class Logger(object):
     def __init__(self, is_to_file=False, path=None):
         self.is_to_file = is_to_file
         if path is None:
-            path = "Astragalin.log"
+            path = "Astragalins.log"
         self.path = path
         create_file(path)
 

@@ -13,8 +13,27 @@ import sys
 
 
 from classfier import Astragalin
-from utils import DualSock, try_connect, receive_sock, parse_protocol, ack_sock, done_sock, process_cmd
+from utils import DualSock, try_connect, receive_sock, parse_protocol, ack_sock, done_sock
 from root_dir import ROOT_DIR
+
+
+def process_cmd(cmd: str, data:any, connected_sock: socket.socket, detector: Astragalin) -> tuple:
+    '''
+    处理指令
+    :param cmd: 指令类型
+    :param data: 指令内容
+    :param connected_sock: socket
+    :param detector: 模型
+    :return: 是否处理成功
+    '''
+    result = ''
+    if cmd == 'IM':
+        result = detector.predict(data)
+        response = done_sock(connected_sock, cmd, result)
+    else:
+        logging.error(f'错误指令，指令为{cmd}')
+        response = False
+    return response, result
 
 
 def main(is_debug=False):
@@ -26,9 +45,9 @@ def main(is_debug=False):
                         handlers=[file_handler, console_handler], level=logging.DEBUG)
     dual_sock = DualSock(connect_ip='127.0.0.1')
 
-    while not dual_sock.statue:
+    while not dual_sock.status:
         dual_sock.reconnect()
-    detector = Astragalin(load_from=ROOT_DIR / 'models' / 'astragalin.p')
+    detector = Astragalin(r"C:\Users\FEIJINTI\OneDrive\PycharmProjects\Astragalin\models\astragalin.p")
     # _ = detector.predict(np.ones((4096, 1200, 10), dtype=np.float32))
     while True:
         pack, next_pack = receive_sock(dual_sock)
