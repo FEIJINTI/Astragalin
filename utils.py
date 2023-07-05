@@ -15,7 +15,7 @@ import os
 import shutil
 import time
 import socket
-
+from classfier import Astragalin
 
 
 
@@ -137,9 +137,6 @@ def save_raw(file_name, data):
     data = data.reshape(-1)
     with open(file_name, 'wb') as f:
         f.write(data.astype(np.float32).tobytes())
-
-
-
 
 
 def read_rgb(file_name):
@@ -278,6 +275,7 @@ class DualSock(PreSocket):
         send_status, self.send_sock = try_connect(connect_ip=connect_ip, port_number=send_port)
         return received_status and send_status
 
+
 def receive_sock(recv_sock: PreSocket, pre_pack: bytes = b'', time_out: float = -1.0, time_out_single=5e20) -> (
 bytes, bytes):
     """
@@ -366,6 +364,97 @@ bytes, bytes):
     else:
         logging.error(f"接收了一个完美的只错了校验位的报文")
         return b'', b''
+
+
+def parse_protocol(data: bytes) -> (str, any):
+    '''
+    指令转换
+    :param data: 接收到的报文
+    :return: 指令类型，指令内容
+    '''
+    try:
+        assert len(data) > 4
+    except AssertionError:
+        logging.error('指令转换失败，长度不足5')
+        return '', None
+    cmd, data = data[:4], data[4:]
+    cmd = cmd.decode('ascii').strip().upper()
+    if cmd == 'IM':
+        n_rows, n_cols, n_bands, img = data[:2], data[2:4], data[4:6], data[6:]
+        try:
+            n_rows, n_cols, n_bands = [int.from_bytes(x, byteorder='big') for x in [n_rows, n_cols, n_bands]]
+        except Exception as e:
+            logging.error(f'长宽转换失败, 错误代码{e}, 报文大小: n_rows:{n_rows}, n_cols: {n_cols}, n_bands: {n_bands}')
+            return '', None
+        try:
+            assert n_rows * n_cols * 12 == len(img)
+            # 因为是float32类型 所以长度要乘12 ，如果是uint8则乘3
+        except AssertionError:
+            logging.error('图像指令IM转换失败，数据长度错误')
+            return '', None
+        img = np.frombuffer(img, dtype=np.float32).reshape((n_rows, n_bands, -1)).transpose((0, 2, 1))
+        return cmd, img
+
+
+def ack_sock(send_sock: socket.socket, cmd_type: str) -> bool:
+    '''
+    发送应答
+    :param cmd_type:指令类型
+    :param send_sock:指定sock
+    :return:是否发送成功
+    '''
+    msg = b'\xaa\x00\x00\x00\x05' + (' A' + cmd_type).upper().encode('ascii') + b'\xff\xff\xff\xbb'
+    try:
+        send_sock.send(msg)
+    except Exception as e:
+        logging.error(f'发送应答失败，错误类型：{e}')
+        return False
+    return True
+
+
+def done_sock(send_sock: socket.socket, cmd_type: str, result = '') -> bool:
+    '''
+    发送任务完成指令
+    :param send_sock: 指定sock
+    :param cmd_type: 指令类型
+    :param result: 数据
+    :return: 是否发送成功
+    '''
+    cmd = cmd_type.strip().upper()
+    if cmd_type == 'IM':
+        n_rows, n_cols = result.shape[0], result.shape[1]
+        n_rows = n_rows.to_bytes(2, byteorder='big')
+        n_cols = n_cols.to_bytes(2, byteorder='big')
+        result = result.tobytes()
+        length = len(result) + 4
+        length = length.to_bytes(4, byteorder='big')
+        msg = b'\xaa' + length + (' D' + cmd).upper().encode('ascii') + n_rows + n_cols + result + b'\xff\xff\xbb'
+    try:
+        send_sock.send(msg)
+    except Exception as e:
+        logging.error(f'发送完成指令失败，错误类型：{e}')
+        return False
+    return True
+
+
+def process_cmd(cmd: str, data:any, connected_sock: socket.socket, detector: Astragalin) -> tuple:
+    '''
+    处理指令
+    :param cmd: 指令类型
+    :param data: 指令内容
+    :param connected_sock: socket
+    :param detector: 模型
+    :return: 是否处理成功
+    '''
+    result = ''
+    if cmd == 'IM':
+        result = detector.predict(data)
+        response = done_sock(connected_sock, cmd, result)
+    else:
+        logging.error(f'错误指令，指令为{cmd}')
+        response = False
+    return response, result
+
 
 def mkdir_if_not_exist(dir_name, is_delete=False):
     """

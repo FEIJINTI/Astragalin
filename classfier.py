@@ -78,11 +78,11 @@ class Astragalin(object):
         return int(pre_score * 100)
 
 
-    def fit_value(self, data_path='data/1.txt', select_bands=[91, 92, 93, 94, 95, 96, 97, 98, 99, 100]):
+    def fit_value(self, file_name=None, data_path='data/1.txt', select_bands=[91, 92, 93, 94, 95, 96, 97, 98, 99, 100]):
         data_x, data_y = self.data_construction(data_path, select_bands)
         score = self.fit(data_x, data_y)
         print('score:', score)
-        model_name = self.save()
+        model_name = self.save(file_name=file_name)
         return score, model_name
 
 
@@ -102,18 +102,18 @@ class Astragalin(object):
         data = utils.read_envi_ascii(data_path)
         beijing = data['beijing'][:, select_bands]
         zazhi1 = data['zazhi1'][:, select_bands]
-        zazhi2 = data['zazhi2'][:, select_bands]
+        # zazhi2 = data['zazhi2'][:, select_bands]
         huangqi = data['huangqi'][:, select_bands]
         gancaopian = data['gancaopian'][:, select_bands]
-        hongqi = data['hongqi'][:, select_bands]
+        # hongqi = data['hongqi'][:, select_bands]
         beijing_y = np.zeros(beijing.shape[0])
         zazhi1_y = np.ones(zazhi1.shape[0])
-        zazhi2_y = np.ones(zazhi2.shape[0]) * 2
+        # zazhi2_y = np.ones(zazhi2.shape[0]) * 2
         huangqi_y = np.ones(huangqi.shape[0]) * 3
         gancaopian_y = np.ones(gancaopian.shape[0]) * 4
-        hongqi_y = np.ones(hongqi.shape[0]) * 5
-        data_x = np.concatenate((beijing, zazhi1, zazhi2, huangqi, gancaopian, hongqi), axis=0)
-        data_y = np.concatenate((beijing_y, zazhi1_y, zazhi2_y, huangqi_y, gancaopian_y, hongqi_y), axis=0)
+        # hongqi_y = np.ones(hongqi.shape[0]) * 5
+        data_x = np.concatenate((beijing, zazhi1, huangqi, gancaopian), axis=0)
+        data_y = np.concatenate((beijing_y, zazhi1_y, huangqi_y, gancaopian_y), axis=0)
         return data_x, data_y
 
     def predict(self, data_x):
@@ -140,3 +140,6 @@ class Astragalin(object):
         return data_y
 
 
+if __name__ == '__main__':
+    detector = Astragalin()
+    detector.fit_value(file_name="astragalin.p", data_path="data/1.txt")
