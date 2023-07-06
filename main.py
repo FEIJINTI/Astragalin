@@ -52,10 +52,10 @@ def main(is_debug=False):
     # _ = detector.predict(np.ones((4096, 1200, 10), dtype=np.float32))
     while True:
         pack, next_pack = receive_sock(dual_sock)
-        # if pack == b"":  # 无数据
-        #     time.sleep(5)
-        #     dual_sock.reconnect()
-        #     continue
+        if pack == b"":  # 无数据
+            time.sleep(5)
+            # dual_sock.reconnect()
+            continue
 
         cmd, data = parse_protocol(pack)
         process_cmd(cmd=cmd, data=data, connected_sock=dual_sock, detector=detector)
