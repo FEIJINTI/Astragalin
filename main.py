@@ -68,9 +68,7 @@ def main(is_debug=False):
             continue
 
         cmd, data = parse_protocol(pack)
-        t1 = time.time()
         process_cmd(cmd=cmd, data=data, connected_sock=dual_sock, detector=detector)
-        print(time.time() - t1)
 
 if __name__ == '__main__':
     main()

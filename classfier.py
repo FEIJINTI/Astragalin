@@ -136,7 +136,7 @@ class Astragalin(object):
             data_y[mask] = category
             center = ndimage.measurements.center_of_mass(data_y, labels, [i])
             center = list(center)
-            center = np.array(center).astype(np.int)
+            center = np.array(center).astype(int)
             centers.append(center)
             categories.append(category)
         return data_y, centers, categories
