@@ -127,19 +127,27 @@ class Astragalin(object):
         data_x = data_x.reshape(-1, data_x.shape[2])
         data_y = self.model.predict(data_x)
         data_y = data_y.reshape(data_x_shape[0], data_x_shape[1]).astype(np.uint8)
-        data_y = self.connect_space(data_y)
-        return data_y
+        data_y, centers, categories = self.connect_space(data_y)
+        result = {'data_y': data_y, 'centers': centers, 'categories': categories}
+        return result
 
 
 # 连通域处理离散点
-    def connect_space(self, data_y, centers):
+    def connect_space(self, data_y):
         labels, num_features = ndimage.label(data_y)
+        centers = []
+        categories = []
         for i in range(1, num_features + 1):
             mask = (labels == i)
             counts = np.bincount(data_y[mask])
-            data_y[mask] = np.argmax(counts)
-            centers = ndimage.measurements.center_of_mass(data_y, labels, [i])
-        return data_y, centers
+            category = np.argmax(counts)
+            data_y[mask] = category
+            center = ndimage.measurements.center_of_mass(data_y, labels, [i])
+            center = list(center)
+            center = np.array(center).astype(np.int)
+            centers.append(center)
+            categories.append(category)
+        return data_y, centers, categories
 
 
 if __name__ == '__main__':

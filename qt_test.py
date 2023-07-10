@@ -110,10 +110,9 @@ def main():
             result = b''
             while len(result) < length:
                 result += socket_send_2.recv(length)
-            n_rows, n_cols = int.from_bytes(result[4:6], byteorder='big'), int.from_bytes(result[6:8], byteorder='big')
-            data = np.frombuffer(result[8:length], dtype=np.uint8).reshape(n_rows, n_cols)
-            plt.imshow(data)
-            plt.show()
+            print(result)
+            data = result[4:length].decode()
+            print(data)
 
 if __name__ == '__main__':
     main()

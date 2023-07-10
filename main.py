@@ -29,6 +29,14 @@ def process_cmd(cmd: str, data: any, connected_sock: socket.socket, detector: As
     result = ''
     if cmd == 'IM':
         result = detector.predict(data)
+        # 取出result中的字典中的centers和categories
+        centers = result['centers']
+        categories = result['categories']
+        # 将centers和categories转换为字符串，每一位之间用,隔开，centers是list,每个元素为np.array，categories是1维数组
+        centers_str = ','.join([','.join([str(i) for i in j]) for j in centers])
+        categories_str = ','.join([str(i) for i in categories])
+        # 将centers和categories的字符串拼接起来，中间用;隔开
+        result = centers_str + ';' + categories_str
         response = done_sock(connected_sock, cmd, result)
     else:
         logging.error(f'错误指令，指令为{cmd}')
@@ -44,7 +52,7 @@ def main(is_debug=False):
     console_handler.setLevel(logging.DEBUG if is_debug else logging.WARNING)
     logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] - %(levelname)s - %(message)s',
                         handlers=[file_handler, console_handler], level=logging.DEBUG)
-    dual_sock = DualSock(connect_ip='192.168.2.230')
+    dual_sock = DualSock(connect_ip='127.0.0.1')
 
     while not dual_sock.status:
         logging.error('连接被断开，正在重连')
@@ -55,12 +63,13 @@ def main(is_debug=False):
         pack, next_pack = receive_sock(dual_sock)
         if pack == b"":  # 无数据
             time.sleep(5)
-            # dual_sock.reconnect()
+            dual_sock.reconnect()
             continue
 
         cmd, data = parse_protocol(pack)
+        t1 = time.time()
         process_cmd(cmd=cmd, data=data, connected_sock=dual_sock, detector=detector)
-
+        print(time.time() - t1)
 
 if __name__ == '__main__':
     main()

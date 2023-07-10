@@ -420,14 +420,11 @@ def done_sock(send_sock: socket.socket, cmd_type: str, result = '') -> bool:
     '''
     cmd = cmd_type.strip().upper()
     if cmd_type == 'IM':
-        n_rows, n_cols = result.shape[0], result.shape[1]
-        n_rows = n_rows.to_bytes(2, byteorder='big')
-        n_cols = n_cols.to_bytes(2, byteorder='big')
-        result = result.tobytes()
-        # 指令4位，长宽各2位
-        length = len(result) + 8
+        result = result.encode()
+        # 指令4位
+        length = len(result) + 4
         length = length.to_bytes(4, byteorder='big')
-        msg = b'\xaa' + length + (' D' + cmd).upper().encode('ascii') + n_rows + n_cols + result + b'\xff\xff\xbb'
+        msg = b'\xaa' + length + (' D' + cmd).upper().encode('ascii') + result + b'\xff\xff\xbb'
     try:
         send_sock.send(msg)
     except Exception as e:
