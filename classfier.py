@@ -132,13 +132,14 @@ class Astragalin(object):
 
 
 # 连通域处理离散点
-    def connect_space(self, data_y):
+    def connect_space(self, data_y, centers):
         labels, num_features = ndimage.label(data_y)
         for i in range(1, num_features + 1):
             mask = (labels == i)
             counts = np.bincount(data_y[mask])
             data_y[mask] = np.argmax(counts)
-        return data_y
+            centers = ndimage.measurements.center_of_mass(data_y, labels, [i])
+        return data_y, centers
 
 
 if __name__ == '__main__':

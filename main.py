@@ -17,7 +17,7 @@ from utils import DualSock, try_connect, receive_sock, parse_protocol, ack_sock,
 from root_dir import ROOT_DIR
 
 
-def process_cmd(cmd: str, data:any, connected_sock: socket.socket, detector: Astragalin) -> tuple:
+def process_cmd(cmd: str, data: any, connected_sock: socket.socket, detector: Astragalin) -> tuple:
     '''
     处理指令
     :param cmd: 指令类型
@@ -34,6 +34,7 @@ def process_cmd(cmd: str, data:any, connected_sock: socket.socket, detector: Ast
         logging.error(f'错误指令，指令为{cmd}')
         response = False
     return response, result
+
 
 
 def main(is_debug=False):
