@@ -33,10 +33,11 @@ def process_cmd(cmd: str, data: any, connected_sock: socket.socket, detector: As
         centers = result['centers']
         categories = result['categories']
         # 将centers和categories转换为字符串，每一位之间用,隔开，centers是list,每个元素为np.array，categories是1维数组
-        centers_str = ','.join([','.join([str(i) for i in j]) for j in centers])
-        categories_str = ','.join([str(i) for i in categories])
-        # 将centers和categories的字符串拼接起来，中间用;隔开
-        result = centers_str + ';' + categories_str
+        # centers_str = '|'.join([str(point[0][0]) + ',' + str(point[0][1]) for point in centers])
+        # categories_str = ','.join([str(i) for i in categories])
+        # # 将centers和categories的字符串拼接起来，中间用;隔开
+        # result = centers_str + ';' + categories_str
+        result = '|'.join([f'{point[0][0]},{point[0][1]},{category}' for point, category in zip(centers, categories)])
         response = done_sock(connected_sock, cmd, result)
     else:
         logging.error(f'错误指令，指令为{cmd}')
@@ -60,8 +61,8 @@ def main(is_debug=False):
     detector = Astragalin(ROOT_DIR / 'models' / 'astragalin.p')
     # _ = detector.predict(np.ones((4096, 1200, 10), dtype=np.float32))
     while True:
-        pack, next_pack = receive_sock(dual_sock)
-        if pack == b"":  # 无数据
+        pack, next_pack = receive_sock(dual_sock) # 接收数据，如果没有数据则阻塞，如果返回的是空字符串则表示出现错误
+        if pack == b"":  # 无数据表示出现错误
             time.sleep(5)
             dual_sock.reconnect()
             continue

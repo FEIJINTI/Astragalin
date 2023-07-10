@@ -278,7 +278,7 @@ class DualSock(PreSocket):
 def receive_sock(recv_sock: PreSocket, pre_pack: bytes = b'', time_out: float = -1.0, time_out_single=5e20) -> (
 bytes, bytes):
     """
-    从指定的socket中读取数据.
+    从指定的socket中读取数据.自动阻塞，如果返回的数据为空则说明连接出现问题，需要重新连接。
 
     :param recv_sock: 指定sock
     :param pre_pack: 上一包的粘包内容
