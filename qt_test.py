@@ -8,6 +8,7 @@ import socket
 import logging
 import matplotlib.pyplot as plt
 
+
 def rec_socket(recv_sock: socket.socket, cmd_type: str, ack: bool) -> bool:
     if ack:
         cmd = 'A' + cmd_type
@@ -73,7 +74,6 @@ def rec_socket(recv_sock: socket.socket, cmd_type: str, ack: bool) -> bool:
             return False
 
 
-
 def main():
     socket_receive = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket_receive.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -113,6 +113,7 @@ def main():
             print(result)
             data = result[4:length].decode()
             print(data)
+
 
 if __name__ == '__main__':
     main()

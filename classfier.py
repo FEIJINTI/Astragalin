@@ -31,7 +31,6 @@ class Astragalin(object):
         self.log = utils.Logger(is_to_file=debug_mode)
         self.debug_mode = debug_mode
 
-
     def load(self, path=None):
         if path is None:
             path = os.path.join(ROOT_DIR, 'models')
@@ -56,8 +55,6 @@ class Astragalin(object):
         self.model = model_dic['model']
         return 0
 
-
-
     def fit(self, data_x, data_y):
         x_train, x_test, y_train, y_test = train_test_split(data_x, data_y, test_size=0.3, random_state=65)
         self.model.fit(x_train, y_train)
@@ -77,7 +74,6 @@ class Astragalin(object):
 
         return int(pre_score * 100)
 
-
     def fit_value(self, file_name=None, data_path='data/1.txt', select_bands=[91, 92, 93, 94, 95, 96, 97, 98, 99, 100]):
         data_x, data_y = self.data_construction(data_path, select_bands)
         score = self.fit(data_x, data_y)
@@ -85,10 +81,8 @@ class Astragalin(object):
         model_name = self.save(file_name=file_name)
         return score, model_name
 
-
-
-    #保存模型
     def save(self, file_name):
+        # 保存模型
         if file_name is None:
             file_name = "model_" + time.strftime("%Y-%m-%d_%H-%M") + ".p"
         file_name = os.path.join(ROOT_DIR, "models", file_name)
@@ -97,7 +91,6 @@ class Astragalin(object):
             pickle.dump(model_dic, f)
         self.log.log("Model saved to '" + str(file_name) + "'.")
         return file_name
-
 
     def data_construction(self, data_path, select_bands):
         data = utils.read_envi_ascii(data_path)
@@ -131,9 +124,8 @@ class Astragalin(object):
         result = {'data_y': data_y, 'centers': centers, 'categories': categories}
         return result
 
-
-# 连通域处理离散点
     def connect_space(self, data_y):
+        # 连通域处理离散点
         labels, num_features = ndimage.label(data_y)
         centers = []
         categories = []
