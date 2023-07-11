@@ -92,29 +92,47 @@ class Astragalin(object):
         self.log.log("Model saved to '" + str(file_name) + "'.")
         return file_name
 
-    def data_construction(self, data_path, select_bands):
+    # def data_construction(self, data_path, select_bands):
+    #     data = utils.read_envi_ascii(data_path)
+    #     beijing = data['beijing'][:, select_bands]
+    #     zazhi1 = data['zazhi1'][:, select_bands]
+    #     # zazhi2 = data['zazhi2'][:, select_bands]
+    #     huangqi = data['huangqi'][:, select_bands]
+    #     gancaopian = data['gancaopian'][:, select_bands]
+    #     # hongqi = data['hongqi'][:, select_bands]
+    #     beijing_y = np.zeros(beijing.shape[0])
+    #     zazhi1_y = np.ones(zazhi1.shape[0]) * 3
+    #     # zazhi2_y = np.ones(zazhi2.shape[0]) * 2
+    #     huangqi_y = np.ones(huangqi.shape[0]) * 1
+    #     gancaopian_y = np.ones(gancaopian.shape[0]) * 4
+    #     # hongqi_y = np.ones(hongqi.shape[0]) * 5
+    #     data_x = np.concatenate((beijing, zazhi1, huangqi, gancaopian), axis=0)
+    #     data_y = np.concatenate((beijing_y, zazhi1_y, huangqi_y, gancaopian_y), axis=0)
+    #     return data_x, data_y
+
+    def data_construction(self, data_path='data/1.txt', select_bands=[91, 92, 93, 94, 95, 96, 97, 98, 99, 100],
+                          type=['beijing', 'zazhi1', 'huangqi', 'gancaopian']):
+        '''
+        :param data_path: 数据文件路径
+        :param select_bands: 选择的波段
+        :param type: 选择的类型
+        :return: data_x, data_y
+        '''
         data = utils.read_envi_ascii(data_path)
-        beijing = data['beijing'][:, select_bands]
-        zazhi1 = data['zazhi1'][:, select_bands]
-        # zazhi2 = data['zazhi2'][:, select_bands]
-        huangqi = data['huangqi'][:, select_bands]
-        gancaopian = data['gancaopian'][:, select_bands]
-        # hongqi = data['hongqi'][:, select_bands]
-        beijing_y = np.zeros(beijing.shape[0])
-        zazhi1_y = np.ones(zazhi1.shape[0])
-        # zazhi2_y = np.ones(zazhi2.shape[0]) * 2
-        huangqi_y = np.ones(huangqi.shape[0]) * 3
-        gancaopian_y = np.ones(gancaopian.shape[0]) * 4
-        # hongqi_y = np.ones(hongqi.shape[0]) * 5
-        data_x = np.concatenate((beijing, zazhi1, huangqi, gancaopian), axis=0)
-        data_y = np.concatenate((beijing_y, zazhi1_y, huangqi_y, gancaopian_y), axis=0)
+        # 判断读取的txt文件内是否有beijing和haungqi类型的数据
+        if 'beijing' not in data or 'huangqi' not in data:
+            logging.error("数据文件中缺少'beijing'或'huangqi'类型标签")
+            raise ValueError("数据文件中缺少'beijing'或'huangqi'类型标签")
+        data_x = np.concatenate([data[key][:, select_bands] for key in type], axis=0)
+        data_y = np.concatenate([np.zeros(data[key].shape[0]) if key == 'beijing' else np.ones(data[key].shape[0])
+            if key == 'huangqi' else np.ones(data[key].shape[0]) * (i + 2) for i, key in enumerate(type)], axis=0)
         return data_x, data_y
 
     def predict(self, data_x):
         '''
         对数据进行预测
         :param data_x: 波段选择后的数据
-        :return: 预测结果二值化后的数据，0为背景，1为杂质1,2为杂质2，3为黄芪，4为甘草片，5为红芪
+        :return: 预测结果二值化后的数据，0为背景，1为黄芪,2为杂质2，3为杂质1，4为甘草片，5为红芪
         '''
         data_x_shape = data_x.shape
         data_x = data_x.reshape(-1, data_x.shape[2])
